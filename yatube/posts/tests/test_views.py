@@ -38,13 +38,16 @@ class PostPagesTests(TestCase):
                 'posts:post_detail', kwargs={'post_id': self.post.id}),
             'posts/create_post.html': reverse('posts:create_post'),
             'posts/profile.html': reverse('posts:profile', args={self.author}),
-            'posts/create_post.html': reverse(
-                'posts:post_edit', kwargs={'post_id': self.post.id}),
         }
         for template, reverse_name in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
+
+    def test_post_edit_page_show_correct_template(self):
+        response = self.authorized_client.get(reverse(
+            'posts:post_edit', kwargs={'post_id': self.post.id}))
+        self.assertTemplateUsed(response, 'posts/create_post.html')
 
     def check_context(self, context):
         self.assertIn('page_obj', context)

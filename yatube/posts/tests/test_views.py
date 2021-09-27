@@ -97,10 +97,10 @@ class PostPagesTests(TestCase):
         response = (self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id})))
         self.assertEqual(response.context.get(
-            'post').group.title, 'Тестовая группа')
+            'post').group.title, self.group.title)
         self.assertEqual(response.context.get(
             'post').author, self.author)
-        self.assertEqual(response.context.get('post').text, 'Текст')
+        self.assertEqual(response.context.get('post').text, self.post.text)
 
 
 class PaginatorViewsTest(TestCase):

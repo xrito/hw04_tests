@@ -14,16 +14,30 @@ class PostModelTests(TestCase):
         cls.author = User.objects.create_user(
             username='HasNoName'
         )
-        Post.objects.create(
+        cls.post = Post.objects.create(
             text='Тестовый текст',
             author=cls.author,
-            pk=1,
         )
         cls.form = PostForm()
 
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
+
+    def test_post_create_guest_client(self):
+        posts_count = Post.objects.count()
+        form_data = {
+            'text': 'Тестовый текст',
+        }
+        response = self.guest_client.post(
+            reverse('posts:create_post'),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(Post.objects.count(), posts_count)
+        self.assertRedirects(response,
+                             '{}?next={}'.format('/auth/login/', '/create/'))
 
     def test_create_post(self):
         posts_count = Post.objects.count()
@@ -36,7 +50,14 @@ class PostModelTests(TestCase):
             follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertRedirects(response, '/profile/HasNoName/')
+        self.assertRedirects(response, reverse(
+            'posts:profile', args=[self.author]))
+        self.assertTrue(
+            Post.objects.filter(
+                text='Тестовый текст',
+                author=self.author,
+            ).exists()
+        )
 
     def test_edit_post(self):
         posts_count = Post.objects.count()
@@ -44,9 +65,16 @@ class PostModelTests(TestCase):
             'text': 'Тестовый текст',
         }
         response = self.authorized_client.post(
-            reverse('posts:post_edit', args=([1])),
+            reverse('posts:post_edit', kwargs={'post_id': self.post.id}),
             data=form_data,
             follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertRedirects(response, '/posts/1/')
+        self.assertRedirects(response, reverse(
+            'posts:post_detail', kwargs={'post_id': self.post.id}))
+        self.assertTrue(
+            Post.objects.filter(
+                text='Тестовый текст',
+                author=self.author,
+            ).exists()
+        )

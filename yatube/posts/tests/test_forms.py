@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from posts.models import Post
+
 from posts.forms import PostForm
+from posts.models import Post
 
 User = get_user_model()
 
@@ -36,8 +37,7 @@ class PostModelTests(TestCase):
             follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertRedirects(response,
-                             '{}?next={}'.format('/auth/login/', '/create/'))
+        self.assertRedirects(response, reverse('users:login') + '?next=' + reverse('posts:create_post'))
 
     def test_create_post(self):
         posts_count = Post.objects.count()
@@ -54,7 +54,7 @@ class PostModelTests(TestCase):
             'posts:profile', args=[self.author]))
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст',
+                text=self.post.text,
                 author=self.author,
             ).exists()
         )
@@ -74,7 +74,7 @@ class PostModelTests(TestCase):
             'posts:post_detail', kwargs={'post_id': self.post.id}))
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый текст',
+                text=self.post.text,
                 author=self.author,
             ).exists()
         )

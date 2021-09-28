@@ -37,7 +37,8 @@ class PostModelTests(TestCase):
             follow=True
         )
         self.assertEqual(Post.objects.count(), posts_count)
-        self.assertRedirects(response, reverse('users:login') + '?next=' + reverse('posts:create_post'))
+        self.assertRedirects(response, reverse(
+            'users:login') + '?next=' + reverse('posts:create_post'))
 
     def test_create_post(self):
         posts_count = Post.objects.count()

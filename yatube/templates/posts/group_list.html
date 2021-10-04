@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load thumbnail %}
 
 {% block title %}{{ group.title }}{% endblock %}
 
@@ -19,6 +20,9 @@
       Дата публикации: {{ post.pub_date|date:"d E Y" }}
     </li>
   </ul>
+  {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
+    <img class="card-img my-2" src="{{ im.url }}">
+  {% endthumbnail %}
   <p>{{ post.text }}</p>
   <p class="link-read-post"><a href="{% url 'posts:post_detail' post.pk %}"> подробная информация </a></p>
   {% if post.group  %}

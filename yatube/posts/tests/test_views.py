@@ -7,6 +7,8 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.core.cache import cache
+
 from posts.models import Group, Post
 
 User = get_user_model()
@@ -50,6 +52,7 @@ class PostPagesTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
+        cache.clear()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
 
@@ -126,6 +129,7 @@ class PostPagesTests(TestCase):
         self.assertEqual(response.context.get(
             'post').author, self.author)
         self.assertEqual(response.context.get('post').text, self.post.text)
+        self.assertEqual(response.context.get('post').image, self.post.image)
 
 
 class PaginatorViewsTest(TestCase):

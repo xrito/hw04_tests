@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
+from django.core.cache import cache
+from django.urls import reverse
 
 from posts.models import Post, Group
 
@@ -22,10 +24,11 @@ class PostURLTests(TestCase):
             text='Тестовый текст',
             author=cls.author,
             group=cls.group,
-            pk=1,
+            # pk=1,
         )
 
     def setUp(self):
+        cache.clear()
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
@@ -33,9 +36,10 @@ class PostURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         templates_url_names = {
             'posts/index.html': '/',
-            'posts/post_detail.html': '/posts/1/',
             'posts/profile.html': '/profile/HasNoName/',
             'posts/group_list.html': '/group/group-slug/',
+            'posts/post_detail.html': reverse(
+                'posts:post_detail', kwargs={'post_id': self.post.id}),
         }
         for template, adress in templates_url_names.items():
             with self.subTest(adress=adress):
@@ -47,9 +51,17 @@ class PostURLTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_post_list_url_authorized_client_edit(self):
-        response = self.authorized_client.get('/posts/1/edit/')
+        response = self.authorized_client.get(
+            reverse('posts:post_detail', kwargs={'post_id': self.post.id}))
         self.assertEqual(response.status_code, 200)
 
     def test_post_url_non_existent_page(self):
         response = self.guest_client.get('unexistent_page/')
         self.assertEqual(response.status_code, 404)
+
+    def test_cached_post(self):
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(response.status_code, 200)
+        
+        self.assertIs(Post.objects.get(pk=1).from_cache, False)
+        self.assertIs(Post.objects.get(pk=1).from_cache, True)

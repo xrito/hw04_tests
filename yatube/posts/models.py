@@ -29,7 +29,7 @@ class Post(models.Model):
         'Картинка',
         upload_to='posts/',
         blank=True,
-        null=True,
+        # null=True,
         help_text='Загрузите картинку'
     )
 
@@ -79,3 +79,6 @@ class Follow(models.Model):
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                related_name='following')
+
+    def follower_count(self):
+        return len(self.follower)

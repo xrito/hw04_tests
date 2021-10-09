@@ -1,12 +1,19 @@
 {% load static %}
 <nav class="navbar navbar-light" style="background-color: lightskyblue">
+<style>
+    .nav-item {
+      display: inline-block; 
+      font-size: 20px; 
+      font-family: sans-serif;
+    }
+  </style>
   <div class="container">
     <a class="navbar-brand" href="{% url 'posts:index' %}">
       <img src="{% static 'img/logo.png' %}" width="30" height="30" class="d-inline-block align-top" alt="">
       <span style="color:red">Ya</span>tube
     </a>
     {% with request.resolver_match.view_name as view_name %}  
-    <ul class="nav  nav-pills">
+    <ul class="nav nav-pills">
       <li class="nav-item">
         <a class="nav-link {% if view_name  == 'about:author' %}active{% endif %}" 
         href="{% url 'about:author' %}">
@@ -19,20 +26,31 @@
           Технологии
         </a>
       </li>
+
+
       {% endwith %}
       
       {% if user.is_authenticated %}
+     {% with url_name=request.resolver_match.url_name %} 
       <li class="nav-item">
-        <a class="nav-link {% if request.resolver_match.view_name  == 'posts:create_post' %}active{% endif %}" 
+        <a class="nav-link {% if url_name  == 'create_post' %}active{% endif %}" 
         href="{% url 'posts:create_post' %}">
           Новая запись
         </a>
       </li>
+       
+      <li class="nav-item">
+        <a class="nav-link {% if url_name  == 'password_change' %}active{% endif %}"
+        href="{% url 'users:password_change' %}">
+        Изменить пароль
+        </a>
+      </li>
+      {% endwith %}
       <li class="nav-item">
         <a class="nav-link link-light" href="{% url 'users:logout' %}">Выйти</a>
       </li>
-      <li>
-        <h4>Пользователь: {{ user.username }}</h4>
+      <li class="h2 text-muted">
+        @{{ user.username }}
       </li>
 
       {% else %}

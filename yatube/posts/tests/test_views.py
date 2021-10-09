@@ -9,7 +9,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.core.cache import cache
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow, Comment
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -53,6 +53,9 @@ class PostPagesTests(TestCase):
 
     def setUp(self):
         cache.clear()
+        self.client = Client()
+        self.user = User.objects.create_user(username='user')
+        self.client.force_login(self.user)
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
 
@@ -131,6 +134,47 @@ class PostPagesTests(TestCase):
         self.assertEqual(response.context.get('post').text, self.post.text)
         self.assertEqual(response.context.get('post').image, self.post.image)
 
+    def test_follow(self):
+        self.response = (self.client.get(
+            reverse('posts:profile_follow', args={self.author})))
+
+        self.assertIs(
+            Follow.objects.filter(user=self.user, author=self.author).exists(),
+            True
+        )
+        self.response = (self.client.get(
+            reverse('posts:profile_unfollow', args={self.author})))
+        self.assertIs(
+            Follow.objects.filter(user=self.user, author=self.author).exists(),
+            False
+        )
+
+    def test_new_post_for_follow(self):
+        Follow.objects.create(user=self.user, author=self.author)
+        response = (self.client.get(reverse('posts:follow_index')))
+        self.assertIn(self.post, response.context['page_obj'])
+        self.client.logout()
+        User.objects.create_user(username='user_test', password='pass')
+        self.client.login(username='user_test', password='pass')
+        response = (self.client.get(reverse('posts:follow_index')))
+        self.assertNotIn(self.post, response.context['page_obj'])
+
+    def test_comment_post_auth_user(self):
+        comment = Comment.objects.create(
+            text='Коментарий', author=self.user, post_id=self.post.id)
+        response = (self.client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id})))
+        response = (self.client.get(
+            reverse('posts:post_detail', kwargs={'post_id': self.post.id})))
+        self.assertContains(response, comment)
+        self.client.logout()
+        response = (self.client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id})))
+        self.assertRedirects(response, reverse(
+            'users:login') + '?next=' + reverse(
+                'posts:add_comment',
+            kwargs={'post_id': self.post.id}))
+
 
 class PaginatorViewsTest(TestCase):
     @ classmethod
@@ -150,39 +194,42 @@ class PaginatorViewsTest(TestCase):
                                 group=cls.group)
 
     def setUp(self):
+        cache.clear()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
 
     def test_index_first_page_contains_ten_records(self):
-        response = self.client.get(reverse('posts:index'))
+        response = self.authorized_client.get(reverse('posts:index'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_index_second_page_contains_three_records(self):
-        response = self.client.get(reverse('posts:index') + '?page=2')
+        response = self.authorized_client.get(
+            reverse('posts:index') + '?page=2')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 3)
 
     def test_group_list_first_page_contains_ten_records(self):
-        response = self.client.get(
+        response = self.authorized_client.get(
             reverse('posts:group_list', kwargs={'slug': 'group-slug'}))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_group_list_second_page_contains_three_records(self):
-        response = self.client.get(reverse('posts:group_list', kwargs={
-            'slug': 'group-slug'}) + '?page=2')
+        response = self.authorized_client.get(reverse(
+            'posts:group_list',
+            kwargs={'slug': 'group-slug'}) + '?page=2')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 3)
 
     def test_profile_first_page_contains(self):
-        response = self.client.get(
+        response = self.authorized_client.get(
             reverse('posts:profile', args={self.author}))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 10)
 
     def test_profile_second_page_contains(self):
-        response = self.client.get(
+        response = self.authorized_client.get(
             reverse('posts:profile', args={self.author}) + '?page=2')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['page_obj']), 3)

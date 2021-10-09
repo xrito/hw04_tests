@@ -8,8 +8,8 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
 
-from posts.forms import PostForm, CommentForm
-from posts.models import Post, Comment
+from posts.forms import PostForm
+from posts.models import Post
 
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -30,7 +30,6 @@ class PostModelTests(TestCase):
         )
 
         cls.form = PostForm()
-        cls.form = CommentForm()
 
     @classmethod
     def tearDownClass(cls):
@@ -69,7 +68,7 @@ class PostModelTests(TestCase):
                 b'\x02\x00\x01\x00\x00\x02\x02\x0C'
                 b'\x0A\x00\x3B'
             ),
-            content_type='image/jpg')        
+            content_type='image/jpg')
         form_data = {
             'text': 'Тестовый текст',
             'image': image,
@@ -110,63 +109,11 @@ class PostModelTests(TestCase):
             ).exists()
         )
 
-    # def test_cached_post(self):
-    #     cache.clear()
-    #     posts_count = Post.objects.count()
-    #     form_data = {
-    #         'text': 'Тестовый текст',
-    #     }
-    #     response = self.authorized_client.post(
-    #         reverse('posts:index'),
-    #         data=form_data,
-    #         follow=True
-    #     )
-    #     cache.clear()
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(Post.objects.count(), posts_count + 1)
-        # cache.clear()
-        # response = self.authorized_client.post(
-        #     reverse('posts:index'),
-        #     data=form_data,
-
-        # # )
-        # self.assertEqual(response.status_code, 200)
-        # self.assertEqual(Post.objects.count(), posts_count + 1)
-
-
-
-    # def test_comment_post(self):
-    #     comment_count = Comment.objects.count()
-    #     form_data = {
-    #         'text': self.comment.text,
-    #     }
-    #     response = self.authorized_client.post(
-    #         reverse('posts:post_detail', kwargs={'post_id': self.post.id}),
-    #         data=form_data,
-    #         follow=True
-    #     )
-    #     self.assertRedirects(response, reverse(
-    #         'posts:post_detail', kwargs={'post_id': self.post.id}))
-    #     self.assertEqual(Comment.objects.count(), comment_count + 1)
-    #     self.assertTrue(
-    #         Comment.objects.filter(
-    #             text=self.post.text,
-    #             author=self.author,
-    #         ).exists()
-    #     )
-
-    # def test_comment_create_guest_client(self):
-    #     posts_count = Post.objects.count()
-    #     comment_count = Comment.objects.count()
-    #     form_data = {
-    #         'text': self.comment.text,
-    #     }
-    #     response = self.guest_client.post(
-    #         reverse('posts:post_detail', kwargs={'post_id': self.post.id}),
-    #         data=form_data,
-    #         follow=True
-    #     )
-    #     self.assertEqual(Post.objects.count(), posts_count)
-    #     self.assertEqual(Comment.objects.count(), comment_count)
-    #     self.assertRedirects(response, reverse(
-    #         'users:login') + '?next=' + reverse('posts:create_post'))
+    def test_cache(self):
+        response_before = self.authorized_client.get(reverse('posts:index'))
+        Post.objects.create(text='Тестовый текст', author=self.author)
+        response_after = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(response_before.content, response_after.content)
+        cache.clear()
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertNotEqual(response_before.content, response.content)

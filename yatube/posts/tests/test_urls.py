@@ -24,7 +24,6 @@ class PostURLTests(TestCase):
             text='Тестовый текст',
             author=cls.author,
             group=cls.group,
-            # pk=1,
         )
 
     def setUp(self):
@@ -58,10 +57,3 @@ class PostURLTests(TestCase):
     def test_post_url_non_existent_page(self):
         response = self.guest_client.get('unexistent_page/')
         self.assertEqual(response.status_code, 404)
-
-    def test_cached_post(self):
-        response = self.authorized_client.get(reverse('posts:index'))
-        self.assertEqual(response.status_code, 200)
-        
-        self.assertIs(Post.objects.get(pk=1).from_cache, False)
-        self.assertIs(Post.objects.get(pk=1).from_cache, True)

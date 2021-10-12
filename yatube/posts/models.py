@@ -71,6 +71,9 @@ class Comment(models.Model):
     def __str__(self):
         return self.text
 
+    class Meta:
+        ordering = ['-created']
+
 
 class Follow(models.Model):
     user = models.ForeignKey(User,
@@ -79,6 +82,3 @@ class Follow(models.Model):
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                related_name='following')
-
-    def follower_count(self):
-        return len(self.follower)

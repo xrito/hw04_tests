@@ -8,7 +8,11 @@ from .models import Group, Post, User, Comment, Follow
 
 
 def index(request):
-    post_list = Post.objects.all()
+    search = request.GET.get('search', '')
+    if search:
+        post_list = Post.objects.filter(text__icontains=search)
+    else:
+        post_list = Post.objects.all()
     paginator = Paginator(post_list, settings.PAGE_POST)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -112,7 +116,7 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     following = Follow.objects.filter(user=request.user).values('author')
-    post_list = Post.objects.filter(author_id__in=following).all()
+    post_list = Post.objects.filter(author_id__in=following)
     paginator = Paginator(post_list, settings.PAGE_POST)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)

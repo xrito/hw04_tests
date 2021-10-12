@@ -49,7 +49,11 @@
       <img class="card-img my-2" src="{{ im.url }}">
       {% endthumbnail %}
 
-      <p>{{ post.text}}</p>
+      <p>
+      <h6>
+      {{ post.text}}
+      </h6>
+      </p>
       <hr>
       {% if post.author == user %}
       <a class="btn btn-primary" href="{% url 'posts:post_edit' post.pk %}">Редактировать запись</a>
@@ -78,15 +82,20 @@
 {% for comment in comments %}
 <div class="media mb-4">
   <div class="media-body">
+  
+
     <h5 class="mt-0">
       <a href="{% url 'posts:profile' comment.author.username %}">
         {{ comment.author.username }}
       </a>
-    </h5>
+      <small>{{ comment.created|date:"d E Y" }}</small>
+    </h5> 
+   
+   
     <p>
       {{ comment.text }}
-      
     </p>
+    <hr>
     {% endfor %}
     </article>
   </div>
